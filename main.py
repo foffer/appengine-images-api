@@ -19,29 +19,48 @@ For more information, see README.md.
 """
 
 # [START all]
-# [START thumbnailer]
+# [START getServingURL]
 from google.appengine.api import images
 from google.appengine.ext import ndb
-
+from google.appengine.api import blobstore
 import webapp2
+from webapp2_extras import json
 
-class Thumbnailer(webapp2.RequestHandler):
+class GetServingURL(webapp2.RequestHandler):
     def get(self):
 
         if self.request.get("imgPath"):
             try:
-                photoURL = images.get_serving_url(None, filename=self.request.get("imgPath"), secure_url=True)
+                blobKey = blobstore.create_gs_key(self.request.get('imgPath'))
+                photoURL = images.get_serving_url(blobKey, secure_url=True)
             except images.ObjectNotFoundError as e:
                     self.response.set_status(404, e)
             if photoURL:
                 self.response.headers['Content-Type'] = 'application/json'
-                self.response.out.write(photoURL)
+                self.response.out.write(json.encode(photoURL))
+                self.response.set_status(200)
                 return
         # Either "id" wasn't provided, or there was no image with that ID
         # in the datastore.
         self.error(404)
-# [END thumbnailer]
+    def delete(self):
+        if self.request.get('imgPath'):
+            try:
+                blobKey = blobstore.create_gs_key(self.request.get('imgPath'))
+                print(blobKey)
+                images.delete_serving_url(blobKey)
+            except images.Error as e:
+                self.response.set_status(404, e)
+            except image.InvalidBlobKeyError as e:
+                self.response.set_status(404, e)
+            except blobstore.Error as e:
+                self.response.set_status(404, e)
+# [END getServingURL]
+
+# [START deleteServingURL]
+
+# [END deleteServingURL]
 
 
-app = webapp2.WSGIApplication([('/img', Thumbnailer)], debug=True)
+app = webapp2.WSGIApplication([('/img', GetServingURL)], debug=True)
 # [END all]
