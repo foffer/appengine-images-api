@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Sample application that demonstrates how to use the App Engine Images API.
-
-For more information, see README.md.
-"""
-
 # [START all]
 # [START getServingURL]
 from google.appengine.api import images
@@ -34,7 +28,11 @@ class GetServingURL(webapp2.RequestHandler):
                 blobKey = blobstore.create_gs_key(self.request.get('imgPath'))
                 photoURL = images.get_serving_url(blobKey, secure_url=True)
             except images.ObjectNotFoundError as e:
-                    self.response.set_status(404, e)
+                self.response.set_status(404, e)
+            except images.AccessDeniedError as e:
+                self.response.set_status(404, e)
+            except images.UnsupportedSizeError as e:
+                self.response.set_status(404, e)
             if photoURL:
                 self.response.headers['Content-Type'] = 'application/json'
                 self.response.out.write(json.encode(photoURL))
